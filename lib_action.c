@@ -201,17 +201,20 @@ int action_decision(const char **board, const char **body, int length, int head,
 	int left = 0;
 	int right = 0;
 
-	if (d == 0) {
+	if (d == 0) { // food is left of a head or right of a head
 		if (c > 0) {
 			left = 1;
 		} else if (c < 0) {
 			right = 1;
 		}
-	} else if (d > 0) {
+	} else if (d > 0) { // food is in front of a head
 
-	} else {
-		//left = 1;
-		//right = 1;
+	} else { // food is behind of a head
+		if (c > 0) {
+			left = 1;
+		} else if (c < 0) {
+			right = 1;
+		}
 	}
 
 	//printf("left = %d, right = %d\n", left, right);
@@ -240,24 +243,23 @@ int action_decision(const char **board, const char **body, int length, int head,
 		}
 	}
 
-	int debug = 0;
+	int debug = 1;
 	if (debug) {
-		vec2 v_left = add(head_point, dir_vec(turn_left[head]));
-		vec2 v_right = add(head_point, dir_vec(turn_right[head]));
-		printf("cross = %d, dot = %d\n", c, d);
 		for (int r = 0; r < 10; r++) {
 			for (int c = 0; c < 10; c++) {
 				vec2 v = {r, c};
 
-				if (equals(v, v_left)) {
+				if (equals(v, left_of_head)) {
 					printf("%c ", 'L');
-				} else if (equals(v, v_right)) {
+				} else if (equals(v, right_of_head)) {
 					printf("%c ", 'R');
 				} else {
 					if (board[r][c] == 1) {
 						printf("F ");
-					} else if (board[r][c]) {
-						printf("%d ", board[r][c]);
+					} else if (board[r][c] == 3) {
+						printf("H ");
+					} else if (board[r][c] == 2) {
+						printf("# ");
 					} else {
 						printf(". ");
 					}
@@ -265,6 +267,7 @@ int action_decision(const char **board, const char **body, int length, int head,
 			}
 			printf("\n");
 		}
+		printf("cross = %d, dot = %d\n", c, d);
 		printf("left = %d, right = %d\n", left, right);
 		printf("left_is_valid = %d, right_is_valid = %d\n", left_is_valid, right_is_valid);
 		printf("left_collide = %d, right_collide = %d, front_collide = %d\n", left_collide, right_collide, front_collide);
