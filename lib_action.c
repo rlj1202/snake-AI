@@ -19,6 +19,8 @@ const int RIGHT = 1;
 const int UP = 2;
 const int DOWN = 3;
 
+const char DIR_NAME[4][6] = {"LEFT", "RIGHT", "UP", "DOWN"};
+
 // body : length * 2 char array
 //  body[0] : 머리, body[1 ~ len - 1] : 몸통
 //  body[i][0] : y값, board[i][1] : x값
@@ -92,7 +94,16 @@ vec2 dir_vec(int dir) {
 	return result;
 }
 
+typedef struct state {
+	vec2 v;
+	int depth;
+} state;
+
 char tmp[12][12];
+
+int visited[12][12];
+state queue[202];
+int front, rear;
 
 // . . . . . .
 // . . 2 3 4 .
@@ -101,6 +112,8 @@ char tmp[12][12];
 // . . . . . .
 
 int check_valid_move(vec2 v, const char **board, const char **body, int length) {
+	if (is_out_of_bound(v)) return 0;
+
 	// copy board only snake
 	for (int r = 0; r < 10; r++) {
 		for (int c = 0; c < 10; c++) {
@@ -108,15 +121,50 @@ int check_valid_move(vec2 v, const char **board, const char **body, int length) 
 			else tmp[r][c] = 0;
 		}
 	}
+	memset(visited, 0, sizeof(visited));
+	front = rear = 0;
 
 	for (int l = 0; l < length; l++) {
 		vec2 v = {body[l][0], body[l][1]};
 		tmp[v.r][v.c] = length - l;
 	}
 
-	// TODO
+	queue[rear++] = (state){v, 1};
+	visited[v.r][v.c] = 1;
 
-	return 0;
+	int valid = 0;
+
+	while (rear - front) {
+		state cur = queue[front++];
+
+		if (tmp[cur.v.r][cur.v.c] > cur.depth) continue;
+
+		if (tmp[cur.v.r][cur.v.c]) valid = 1;
+
+		for (int i = 0; i < 4; i++) {
+			vec2 next = {cur.v.r + dy[i], cur.v.c + dx[i]};
+
+			if (is_out_of_bound(next)) continue;
+
+			if (!visited[next.r][next.c]) {
+				queue[rear++] = (state){next, cur.depth + 1};
+				visited[next.r][next.c] = 1;
+			}
+		}
+	}
+
+	/*
+	for (int r = 0; r < 10; r++) {
+		for (int c = 0; c < 10; c++) {
+			printf("%2d ", tmp[r][c]);
+		}
+		printf("\n");
+	}
+	printf("reach_the_end = %d\n", reach_the_end);
+	printf("\n");
+	*/
+
+	return valid;
 }
 
 // 함수명과 인자의 타입 수정 금지 !
@@ -124,6 +172,9 @@ int action_decision(const char **board, const char **body, int length, int head,
 	vec2 head_point = {body[0][0], body[0][1]};
 	vec2 head_dir = {dy[head], dx[head]};
 	vec2 food_point = {-1, -1};
+	vec2 left_of_head = add(head_point, dir_vec(turn_left[head]));
+	vec2 right_of_head = add(head_point, dir_vec(turn_right[head]));
+	vec2 front_of_head = add(head_point, dir_vec(head));
 
 	for (int r = 0; r < 10; r++) {
 		for (int c = 0; c < 10; c++) {
@@ -163,56 +214,63 @@ int action_decision(const char **board, const char **body, int length, int head,
 		//right = 1;
 	}
 
-	printf("left = %d, right = %d\n", left, right);
+	//printf("left = %d, right = %d\n", left, right);
 
 	int next_dir = head;
 
-	if (left && !does_collide(
-				add(head_point, dir_vec(turn_left[head])),
-				body, length)) {
-		printf("left\n");
+	int left_is_valid = check_valid_move(left_of_head, board, body, length);
+	int right_is_valid = check_valid_move(right_of_head, board, body, length);
+	int front_is_valid = check_valid_move(front_of_head, board, body, length);
+
+	int left_collide = does_collide(left_of_head, body, length);
+	int right_collide = does_collide(right_of_head, body, length);
+	int front_collide = does_collide(front_of_head, body, length);
+
+	if (left && left_is_valid) {
 		next_dir = turn_left[head];
-	} else if (right && !does_collide(
-				add(head_point, dir_vec(turn_right[head])),
-				body, length)) {
-		printf("right\n");
+	} else if (right && right_is_valid) {
 		next_dir = turn_right[head];
 	} else {
-		printf("straight\n");
-
-		vec2 next_point = add(head_point, dir_vec(head));
-		if (does_collide(next_point, body, length)) {
-			if (!does_collide(
-						add(head_point, dir_vec(turn_left[head])),
-						body, length)) {
-				printf("left\n");
-				next_dir = turn_left[head];
-			} else if (!does_collide(
-						add(head_point, dir_vec(turn_right[head])),
-						body, length)) {
-				printf("right\n");
-				next_dir = turn_right[head];
-			}
+		if (front_is_valid) {
+			next_dir = head;
+		} else if (left_is_valid) {
+			next_dir = turn_left[head];
+		} else if (right_is_valid) {
+			next_dir = turn_right[head];
 		}
 	}
 
-	vec2 v_left = add(head_point, dir_vec(turn_left[head]));
-	vec2 v_right = add(head_point, dir_vec(turn_right[head]));
-	printf("cross = %d, dot = %d\n", c, d);
-	for (int r = 0; r < 10; r++) {
-		for (int c = 0; c < 10; c++) {
-			vec2 v = {r, c};
-			if (equals(v, v_left)) {
-				printf("%c ", 'L');
-			} else if (equals(v, v_right)) {
-				printf("%c ", 'R');
-			} else {
-				printf("%d ", board[r][c]);
+	int debug = 0;
+	if (debug) {
+		vec2 v_left = add(head_point, dir_vec(turn_left[head]));
+		vec2 v_right = add(head_point, dir_vec(turn_right[head]));
+		printf("cross = %d, dot = %d\n", c, d);
+		for (int r = 0; r < 10; r++) {
+			for (int c = 0; c < 10; c++) {
+				vec2 v = {r, c};
+
+				if (equals(v, v_left)) {
+					printf("%c ", 'L');
+				} else if (equals(v, v_right)) {
+					printf("%c ", 'R');
+				} else {
+					if (board[r][c] == 1) {
+						printf("F ");
+					} else if (board[r][c]) {
+						printf("%d ", board[r][c]);
+					} else {
+						printf(". ");
+					}
+				}
 			}
+			printf("\n");
 		}
-		printf("\n");
+		printf("left = %d, right = %d\n", left, right);
+		printf("left_is_valid = %d, right_is_valid = %d\n", left_is_valid, right_is_valid);
+		printf("left_collide = %d, right_collide = %d, front_collide = %d\n", left_collide, right_collide, front_collide);
+		printf("next dir : %s\n", DIR_NAME[next_dir]);
+		printf("################################################################################\n");
 	}
-	printf("################################################################################\n");
 
 	return next_dir;
 }
