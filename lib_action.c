@@ -105,12 +105,6 @@ int visited[12][12];
 state queue[202];
 int front, rear;
 
-// . . . . . .
-// . . 2 3 4 .
-// . . 1 . 5 .
-// . . . R 6 L
-// . . . . . .
-
 int check_valid_move(vec2 v, const char **board, const char **body, int length) {
 	if (is_out_of_bound(v)) return 0;
 
@@ -152,17 +146,6 @@ int check_valid_move(vec2 v, const char **board, const char **body, int length) 
 			}
 		}
 	}
-
-	/*
-	for (int r = 0; r < 10; r++) {
-		for (int c = 0; c < 10; c++) {
-			printf("%2d ", tmp[r][c]);
-		}
-		printf("\n");
-	}
-	printf("reach_the_end = %d\n", reach_the_end);
-	printf("\n");
-	*/
 
 	return valid;
 }
@@ -208,16 +191,19 @@ int action_decision(const char **board, const char **body, int length, int head,
 			right = 1;
 		}
 	} else if (d > 0) { // food is in front of a head
-
+		// go straight
 	} else { // food is behind of a head
 		if (c > 0) {
 			left = 1;
 		} else if (c < 0) {
 			right = 1;
+		} else {
+			// XXX test
+			left = 1;
+			right = 1;
+			// XXX test
 		}
 	}
-
-	//printf("left = %d, right = %d\n", left, right);
 
 	int next_dir = head;
 
@@ -243,7 +229,7 @@ int action_decision(const char **board, const char **body, int length, int head,
 		}
 	}
 
-	int debug = 1;
+	int debug = 0;
 	if (debug) {
 		for (int r = 0; r < 10; r++) {
 			for (int c = 0; c < 10; c++) {
@@ -254,24 +240,17 @@ int action_decision(const char **board, const char **body, int length, int head,
 				} else if (equals(v, right_of_head)) {
 					printf("%c ", 'R');
 				} else {
-					if (board[r][c] == 1) {
-						printf("F ");
-					} else if (board[r][c] == 3) {
-						printf("H ");
-					} else if (board[r][c] == 2) {
-						printf("# ");
-					} else {
-						printf(". ");
-					}
+					printf("%c ", ".F#H"[board[r][c]]);
 				}
 			}
 			printf("\n");
 		}
 		printf("cross = %d, dot = %d\n", c, d);
 		printf("left = %d, right = %d\n", left, right);
-		printf("left_is_valid = %d, right_is_valid = %d\n", left_is_valid, right_is_valid);
+		printf("left_is_valid = %d, right_is_valid = %d, front_is_valid = %d\n", left_is_valid, right_is_valid, front_is_valid);
 		printf("left_collide = %d, right_collide = %d, front_collide = %d\n", left_collide, right_collide, front_collide);
 		printf("next dir : %s\n", DIR_NAME[next_dir]);
+		printf("remains time : %d\n", remain_time);
 		printf("################################################################################\n");
 	}
 
